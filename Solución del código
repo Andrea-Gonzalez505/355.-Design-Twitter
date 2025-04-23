@@ -1,0 +1,67 @@
+#include <iostream>
+#include <vector>
+#include <list>
+#include <unordered_map>
+#include <unordered_set>
+#include <queue>
+
+using namespace std;
+
+class Twitter {
+public:
+    // Almacena los tweets como (tiempo, tweetId)
+    unordered_map<int, list<pair<int, int>>> tweetsPorUsuario;
+    
+    // Mapa de seguidores: usuario -> a quién sigue
+    unordered_map<int, unordered_set<int>> relaciones;
+    
+    // Contador global de tiempo para ordenar los tweets
+    int tiempo;
+
+    Twitter() {
+        tiempo = 0;
+    }
+
+    void postTweet(int userId, int tweetId) {
+        tweetsPorUsuario[userId].push_front({tiempo, tweetId});
+        tiempo++;
+    }
+
+    vector<int> getNewsFeed(int userId) {
+        // Verificamos que el usuario se siga a sí mismo si no lo ha hecho
+        if (relaciones[userId].find(userId) == relaciones[userId].end()) {
+            relaciones[userId].insert(userId);
+        }
+
+        // Usamos un heap para mantener los tweets más recientes
+        priority_queue<pair<int, int>> twHeap;
+
+        for (int seguido : relaciones[userId]) {
+            for (const auto& tweet : tweetsPorUsuario[seguido]) {
+                twHeap.push(tweet);
+            }
+        }
+
+        vector<int> feed;
+        int i = 0;
+        while (!twHeap.empty() && i < 10) {
+            feed.push_back(twHeap.top().second);
+            twHeap.pop();
+            i++;
+        }
+
+        return feed;
+    }
+
+    void follow(int quienSigue, int aQuienSigue) {
+        if (quienSigue != aQuienSigue) {
+            relaciones[quienSigue].insert(aQuienSigue);
+        }
+    }
+
+    void unfollow(int quienSigue, int aQuienDeja) {
+        if (quienSigue != aQuienDeja) {
+            relaciones[quienSigue].erase(aQuienDeja);
+        }
+    }
+};
