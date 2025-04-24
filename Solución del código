@@ -1,51 +1,62 @@
 #include <iostream>
 #include <vector>
-#include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <list>
 #include <queue>
-
 using namespace std;
 
 class Twitter {
 public:
-    // Almacena los tweets como (tiempo, tweetId)
+    // guardar los tweets de cada usuario: usuario -> lista de tweets (tiempo, tweetId)
     unordered_map<int, list<pair<int, int>>> tweetsPorUsuario;
-    
-    // Mapa de seguidores: usuario -> a quién sigue
+
+    // guardar las relaciones de seguimiento: usuario -> conjunto de usuarios que sigue
     unordered_map<int, unordered_set<int>> relaciones;
-    
-    // Contador global de tiempo para ordenar los tweets
+
+    // Contador para asignar un tiempo a cada tweet y así ordenarlos luego
     int tiempo;
 
+    // Constructor, inicializa el contador de tiempo
     Twitter() {
         tiempo = 0;
     }
 
+    // Función para publicar un tweet
     void postTweet(int userId, int tweetId) {
+        // Se agrega el tweet al principio de la lista del usuario con la marca de tiempo
         tweetsPorUsuario[userId].push_front({tiempo, tweetId});
-        tiempo++;
+        tiempo++; // Se incrementa el contador de tiempo para el próximo tweet
     }
 
+    // Función para obtener el feed del usuario con los 10 tweets más recientes
     vector<int> getNewsFeed(int userId) {
-        // Verificamos que el usuario se siga a sí mismo si no lo ha hecho
+        // Asegurar que el usuario vea también sus propios tweets
         if (relaciones[userId].find(userId) == relaciones[userId].end()) {
             relaciones[userId].insert(userId);
         }
 
-        // Usamos un heap para mantener los tweets más recientes
+        // Cola de prioridad (heap) para ordenar los tweets del más reciente al más antiguo
         priority_queue<pair<int, int>> twHeap;
 
+        // Recorrer a todos los usuarios que sigue (incluyéndose)
         for (int seguido : relaciones[userId]) {
-            for (const auto& tweet : tweetsPorUsuario[seguido]) {
-                twHeap.push(tweet);
+            // Revisar si el usuario seguido tiene tweets
+            if (tweetsPorUsuario.find(seguido) != tweetsPorUsuario.end()) {
+                // Metemos los tweets a la cola de prioridad
+                for (const auto& tweet : tweetsPorUsuario[seguido]) {
+                    twHeap.push(tweet);
+                }
             }
         }
 
+        // Vector para guardar los resultados finales (máx. 10 tweets)
         vector<int> feed;
         int i = 0;
+
+        // Saca de la cola los 10 tweets más recientes
         while (!twHeap.empty() && i < 10) {
-            feed.push_back(twHeap.top().second);
+            feed.push_back(twHeap.top().second); // Solo nos interesa el tweetId
             twHeap.pop();
             i++;
         }
@@ -53,13 +64,17 @@ public:
         return feed;
     }
 
+    // Función para seguir a otro usuario
     void follow(int quienSigue, int aQuienSigue) {
+        // Verificar que no se intente seguir a sí mismo
         if (quienSigue != aQuienSigue) {
             relaciones[quienSigue].insert(aQuienSigue);
         }
     }
 
+    // Función para dejar de seguir a otro usuario
     void unfollow(int quienSigue, int aQuienDeja) {
+        // Verificar que no se intente dejar de seguir a sí mismo
         if (quienSigue != aQuienDeja) {
             relaciones[quienSigue].erase(aQuienDeja);
         }
